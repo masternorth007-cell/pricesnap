@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PriceSnap — Flipkart vs BigBasket</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f10;
+      --surface: #1a1a1d;
+      --border: #2a2a2e;
+      --flipkart: #F7A600;
+      --bigbasket: #84C225;
+      --text: #f0f0f0;
+      --muted: #888;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .logo span.f { color: var(--flipkart); }
+    .logo span.b { color: var(--bigbasket); }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 8px;
+    }
+
+    .search-wrap {
+      max-width: 600px;
+      margin: 40px auto 0;
+      padding: 0 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-wrap input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 1rem;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-wrap input:focus { border-color: var(--flipkart); }
+    .search-wrap input::placeholder { color: var(--muted); }
+
+    .btn-search {
+      background: var(--flipkart);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 24px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-search:hover { opacity: 0.85; }
+    .btn-search:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .suggestions {
+      max-width: 600px;
+      margin: 14px auto 0;
+      padding: 0 20px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .chip:hover { border-color: var(--bigbasket); color: var(--bigbasket); }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }
+
+    .loading { text-align: center; padding: 60px 0; display: none; }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--flipkart);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { color: var(--muted); font-size: 0.9rem; }
+
+    .winner-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 28px;
+      margin-bottom: 32px;
+      display: none;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .winner-banner.show { display: flex; }
+    .winner-badge { font-size: 2rem; }
+
+    .winner-text h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .winner-text p { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+
+    .savings-pill {
+      margin-left: auto;
+      background: #1a2e0a;
+      color: var(--bigbasket);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 680px) {
+      .columns { grid-template-columns: 1fr; }
+      .logo { font-size: 2rem; }
+      .winner-banner { flex-wrap: wrap; }
+      .savings-pill { margin-left: 0; }
+    }
+
+    .store-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .store-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .store-dot.fk { background: var(--flipkart); }
+    .store-dot.bb { background: var(--bigbasket); }
+
+    .store-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .result-count { margin-left: auto; color: var(--muted); font-size: 0.8rem; }
+
+    .product-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      transition: border-color 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .product-card:hover { border-color: #444; }
+    .product-card.cheapest-fk { border-color: var(--flipkart); box-shadow: 0 0 24px rgba(247,166,0,0.2); }
+    .product-card.cheapest-bb { border-color: var(--bigbasket); box-shadow: 0 0 24px rgba(132,194,37,0.2); }
+
+    .product-img {
+      width: 64px; height: 64px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #222;
+      flex-shrink: 0;
+    }
+
+    .product-img-placeholder {
+      width: 64px; height: 64px;
+      border-radius: 8px;
+      background: #222;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .product-info { flex: 1; min-width: 0; }
+
+    .product-name {
+      font-size: 0.88rem;
+      font-weight: 500;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .product-price {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .product-price.fk { color: var(--flipkart); }
+    .product-price.bb { color: var(--bigbasket); }
+
+    .product-rating { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+    .best-tag {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .best-tag.fk { background: rgba(247,166,0,0.15); color: var(--flipkart); }
+    .best-tag.bb { background: rgba(132,194,37,0.15); color: var(--bigbasket); }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .empty-state .icon { font-size: 2rem; margin-bottom: 10px; }
+
+    .intro {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+
+    .intro .big { font-size: 3rem; margin-bottom: 12px; }
+    .intro p { font-size: 0.95rem; line-height: 1.7; max-width: 420px; margin: 0 auto; }
+
+    .error-msg {
+      background: #2a1010;
+      border: 1px solid #5a2020;
+      border-radius: 10px;
+      padding: 16px 20px;
+      color: #ff7070;
+      font-size: 0.9rem;
+      display: none;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Price<span class="f">Snap</span><span class="b">.</span></div>
+  <p class="tagline">Flipkart vs BigBasket — find the best deal instantly</p>
+
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="Search for toor dal, rice, shampoo…" autocomplete="off"/>
+    <button class="btn-search" id="searchBtn" onclick="doSearch()">Compare →</button>
+  </div>
+
+  <div class="suggestions">
+    <span class="chip" onclick="quickSearch('toor dal')">Toor Dal</span>
+    <span class="chip" onclick="quickSearch('basmati rice')">Basmati Rice</span>
+    <span class="chip" onclick="quickSearch('sunflower oil')">Sunflower Oil</span>
+    <span class="chip" onclick="quickSearch('amul butter')">Amul Butter</span>
+    <span class="chip" onclick="quickSearch('maggi noodles')">Maggi</span>
+  </div>
+</header>
+
+<main>
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Fetching prices from Flipkart & BigBasket…</p>
+  </div>
+
+  <div id="intro" class="intro">
+    <div class="big">🛒</div>
+    <p>Search any grocery or product above to instantly compare prices across Flipkart and BigBasket.</p>
+  </div>
+
+  <div id="results" style="display:none;">
+    <div class="winner-banner" id="winnerBanner">
+      <div class="winner-badge" id="winnerBadge"></div>
+      <div class="winner-text">
+        <h3 id="winnerTitle"></h3>
+        <p id="winnerSub"></p>
+      </div>
+      <div class="savings-pill" id="savingsPill"></div>
+    </div>
+
+    <div class="columns">
+      <div>
+        <div class="store-header">
+          <div class="store-dot fk"></div>
+          <span class="store-name">Flipkart</span>
+          <span class="result-count" id="fkCount"></span>
+        </div>
+        <div id="flipkartResults"></div>
+      </div>
+      <div>
+        <div class="store-header">
+          <div class="store-dot bb"></div>
+          <span class="store-name">BigBasket</span>
+          <span class="result-count" id="bbCount"></span>
+        </div>
+        <div id="bigbasketResults"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  function quickSearch(term) {
+    document.getElementById('searchInput').value = term;
+    doSearch();
+  }
+
+  async function doSearch() {
+    const query = document.getElementById('searchInput').value.trim();
+    if (!query) return;
+
+    setLoading(true);
+    hideError();
+
+    try {
+      // Calls the Netlify function (your API key stays safe on the server)
+      const res = await fetch(`/api/compare?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Something went wrong');
+      renderResults(data);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderResults(data) {
+    document.getElementById('intro').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+
+    const banner = document.getElementById('winnerBanner');
+    if (data.winner && data.cheapestFlipkart && data.cheapestBigbasket) {
+      const fkPrice = data.cheapestFlipkart.price;
+      const bbPrice = data.cheapestBigbasket.price;
+      const savings = Math.abs(fkPrice - bbPrice).toFixed(2);
+      const isFlipkart = data.winner === 'Flipkart';
+
+      document.getElementById('winnerBadge').textContent = isFlipkart ? '🏆' : '🥦';
+      document.getElementById('winnerTitle').textContent = `${data.winner} is cheaper for "${data.query}"`;
+      document.getElementById('winnerSub').textContent = `Best price: ₹${isFlipkart ? fkPrice : bbPrice} vs ₹${isFlipkart ? bbPrice : fkPrice}`;
+      document.getElementById('savingsPill').textContent = `Save ₹${savings}`;
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+
+    document.getElementById('fkCount').textContent = `${data.flipkart.length} results`;
+    document.getElementById('flipkartResults').innerHTML = data.flipkart.length
+      ? data.flipkart.map((p, i) => productCard(p, 'fk', i === 0)).join('')
+      : emptyState('Flipkart');
+
+    document.getElementById('bbCount').textContent = `${data.bigbasket.length} results`;
+    document.getElementById('bigbasketResults').innerHTML = data.bigbasket.length
+      ? data.bigbasket.map((p, i) => productCard(p, 'bb', i === 0)).join('')
+      : emptyState('BigBasket');
+  }
+
+  function productCard(p, store, isCheapest) {
+    const cheapestClass = isCheapest ? `cheapest-${store}` : '';
+    const bestTag = isCheapest ? `<span class="best-tag ${store}">Best Price</span>` : '';
+    const imgHtml = p.image
+      ? `<img class="product-img" src="${p.image}" alt="" onerror="this.style.display='none'">`
+      : `<div class="product-img-placeholder">🛍️</div>`;
+    const ratingHtml = p.rating ? `<div class="product-rating">⭐ ${p.rating}</div>` : '';
+
+    return `
+      <a class="product-card ${cheapestClass}" href="${p.link}" target="_blank" rel="noopener">
+        ${imgHtml}
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+          <div class="product-price ${store}">₹${p.price.toLocaleString('en-IN')} ${bestTag}</div>
+          ${ratingHtml}
+        </div>
+      </a>`;
+  }
+
+  function emptyState(store) {
+    return `<div class="empty-state"><div class="icon">😕</div><p>No results found on ${store}.</p></div>`;
+  }
+
+  function setLoading(on) {
+    document.getElementById('loading').style.display = on ? 'block' : 'none';
+    document.getElementById('searchBtn').disabled = on;
+    if (on) {
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('intro').style.display = 'none';
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = '⚠️ ' + msg;
+    el.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('errorMsg').style.display = 'none';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/compare"
+  to = "/.netlify/functions/compare"
+  status = 200
