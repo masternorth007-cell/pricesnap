@@ -5,51 +5,46 @@ exports.handler = async (event) => {
   const KEY = process.env.SCRAPER_API_KEY;
   if (!KEY) return { statusCode: 500, body: JSON.stringify({ error: 'API key missing' }) };
  
-  // Use ScraperAPI structured Flipkart endpoint (fast, no render needed)
   async function scrapeFlipkart(q) {
-    const url = `https://api.scraperapi.com/structured/flipkart/search?api_key=${KEY}&query=${encodeURIComponent(q)}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const items = data.search_results || data.results || data.products || [];
+    // ScraperAPI structured endpoint for Flipkart
+    const url = `https://api.scraperapi.com/structured/flipkart/search?api_key=${KEY}&query=${encodeURIComponent(q)}&country=in`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(25000) });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch(e) { return []; }
+    
+    const items = data.search_results || data.organic_results || data.results || data.products || [];
     return items.slice(0, 5).map(item => ({
-      name: item.name || item.title || '',
-      price: parseFloat((item.price || '0').toString().replace(/[^0-9.]/g, '')),
-      priceText: item.price || '',
-      link: item.url || `https://www.flipkart.com/search?q=${encodeURIComponent(q)}`,
-      image: item.thumbnail || item.image || '',
-      rating: item.rating || '',
+      name: item.name || item.title || item.product_title || '',
+      price: parseFloat((item.price || item.current_price || item.selling_price || '0').toString().replace(/[^0-9.]/g, '')),
+      priceText: item.price || item.current_price || '',
+      link: item.url || item.product_url || item.link || `https://www.flipkart.com/search?q=${encodeURIComponent(q)}`,
+      image: item.thumbnail || item.image || item.image_url || '',
+      rating: (item.rating || item.stars || '').toString(),
       store: 'Flipkart'
     })).filter(p => p.name && p.price > 0);
   }
  
-  // Use ScraperAPI structured Amazon endpoint for BigBasket fallback
   async function scrapeBigBasket(q) {
-    // Try BigBasket API endpoint directly
-    const url = `https://api.scraperapi.com?api_key=${KEY}&url=${encodeURIComponent('https://www.bigbasket.com/ps/?q=' + encodeURIComponent(q))}&country_code=in`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
-    if (!res.ok) return [];
-    const html = await res.text();
-    const results = [];
+    // Use ScraperAPI with BigBasket's internal search API (returns JSON directly)
+    const bbApiUrl = `https://www.bigbasket.com/product/get-products/?slug=search-results&q=${encodeURIComponent(q)}&page=1`;
+    const url = `https://api.scraperapi.com?api_key=${KEY}&url=${encodeURIComponent(bbApiUrl)}&country_code=in`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(25000) });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch(e) { return []; }
  
-    // Extract prices using regex on the raw HTML
-    const priceMatches = [...html.matchAll(/"sp"\s*:\s*([0-9.]+)/g)];
-    const nameMatches = [...html.matchAll(/"desc"\s*:\s*"([^"]{5,80})"/g)];
-    const imgMatches = [...html.matchAll(/"xxs"\s*:\s*"([^"]+)"/g)];
- 
-    for (let i = 0; i < Math.min(nameMatches.length, priceMatches.length, 5); i++) {
-      const name = nameMatches[i][1];
-      const price = parseFloat(priceMatches[i][1]);
-      const image = imgMatches[i] ? imgMatches[i][1] : '';
-      if (name && price > 0) {
-        results.push({
-          name, price, priceText: '₹' + price,
-          link: `https://www.bigbasket.com/ps/?q=${encodeURIComponent(q)}`,
-          image, store: 'BigBasket'
-        });
-      }
-    }
-    return results;
+    const tabs = data?.tab_info || [];
+    const products = tabs.flatMap(t => t.product_info?.products || []);
+    
+    return products.slice(0, 5).map(p => ({
+      name: p.desc || p.product?.desc || '',
+      price: parseFloat((p.sp || p.product?.sp || '0').toString()),
+      priceText: '₹' + (p.sp || p.product?.sp || ''),
+      link: `https://www.bigbasket.com/pd/${p.id || p.product?.id || ''}`,
+      image: p.images?.[0]?.s || p.product?.images?.[0]?.s || '',
+      store: 'BigBasket'
+    })).filter(p => p.name && p.price > 0);
   }
  
   try {
@@ -77,3 +72,4 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: err.message }) };
   }
 };
+ 
